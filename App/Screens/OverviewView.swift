@@ -4,187 +4,223 @@ import UIKit
 struct OverviewView: View {
     @Binding var tab: Int
     @EnvironmentObject private var monitor: DeviceMonitor
-    @EnvironmentObject private var session: SessionManager
     @EnvironmentObject private var prefs: BoostPreferences
     @EnvironmentObject private var toast: ToastCenter
 
-    private let columns = [GridItem(.flexible(), spacing: 11), GridItem(.flexible(), spacing: 11)]
-
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 21) {
+            VStack(alignment: .leading, spacing: 18) {
                 BrandHeader()
-                HStack(alignment: .firstTextBaseline) {
-                    PageTitle(title: "Tổng quan", subtitle: "Game control center · iOS")
-                    SmallTag(title: "LIVE", color: Palette.green)
-                }
-                hero
-                SectionHeading(title: "Thông số thiết bị", trailing: "Dữ liệu thực từ iOS")
-                LazyVGrid(columns: columns, spacing: 11) {
-                    metric("RAM", value: DeviceSnapshot.readableBytes(monitor.snapshot.totalRAM), detail: "Tổng bộ nhớ vật lý", icon: "memorychip", tint: Palette.purple)
-                    metric("CPU", value: "\(monitor.snapshot.coreCount) lõi", detail: "Số lõi khả dụng", icon: "cpu", tint: Palette.blue)
-                    metric("Ứng dụng", value: monitor.snapshot.appMemory.map(DeviceSnapshot.readableBytes) ?? "—", detail: "RAM Aujunpeak sử dụng", icon: "chart.bar.fill", tint: Palette.green)
-                    metric("Pin", value: monitor.snapshot.battery.map { "\($0)%" } ?? "—", detail: "Dung lượng pin", icon: "battery.75percent", tint: Palette.orange)
-                }
-                deviceIDCard
-                SectionHeading(title: "Trung tâm thao tác", trailing: "Quick actions")
-                LazyVGrid(columns: columns, spacing: 11) {
-                    actionTile("Thư viện game", caption: "App Store Việt Nam", icon: "gamecontroller.fill", tint: Palette.blue) { tab = 1 }
-                    actionTile("Game preset", caption: "Tùy chọn trong app", icon: "bolt.fill", tint: Palette.purple) { tab = 2 }
-                    actionTile("Dọn cache app", caption: "Chỉ dữ liệu Aujunpeak", icon: "trash.slash.fill", tint: Palette.green) {
-                        prefs.clearOwnCache()
-                        toast.show("Đã xóa bộ đệm mạng của Aujunpeak.")
-                    }
-                    actionTile("Làm mới", caption: "Cập nhật thông số", icon: "arrow.clockwise", tint: Palette.orange) {
-                        monitor.refresh()
-                        toast.show("Đã cập nhật thông số thiết bị.")
-                    }
-                }
-                if prefs.preset == .focus {
-                    HStack(spacing: 11) {
-                        IconTile(symbol: "scope", color: Palette.green)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Chế độ tập trung đang bật")
-                                .font(.system(size: 12, weight: .bold)).foregroundStyle(Palette.text)
-                            Text("Đã rút gọn các khu vực phụ trong Tổng quan.")
-                                .font(.system(size: 11)).foregroundStyle(Palette.muted)
-                        }
-                    }.luxeCard()
-                } else {
-                    healthCard
-                }
-                Spacer(minLength: 15)
+                heroCard
+                chartsRow
+                deviceCard
+                actionPanel
+                Spacer(minLength: 18)
             }
-            .padding(.horizontal, 18).padding(.top, 15)
+            .padding(.horizontal, 18)
+            .padding(.top, 15)
         }
         .appPage()
     }
 
-    private var hero: some View {
-        ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 26).fill(Palette.gradient)
-            Circle().stroke(.white.opacity(0.13), lineWidth: 29)
-                .frame(width: 190, height: 190).offset(x: 205, y: -70)
-            Circle().fill(.white.opacity(0.08))
-                .frame(width: 115, height: 115).offset(x: 240, y: 90)
-            VStack(alignment: .leading, spacing: 13) {
-                HStack(spacing: 7) {
-                    Image(systemName: "sparkle")
-                    Text("AUJUNPEAK GAME SPACE")
+    private var heroCard: some View {
+        ZStack(alignment: .bottomLeading) {
+            Image("WropychHero")
+                .resizable()
+                .scaledToFill()
+                .overlay {
+                    LinearGradient(colors: [Color.black.opacity(0.08), Color.black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
                 }
-                .font(.system(size: 10, weight: .bold)).tracking(1.4)
-                .foregroundStyle(.white.opacity(0.83))
-                Text("Sẵn sàng cho\ntrận đấu tiếp theo?")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
-                    Label(prefs.preset.rawValue, systemImage: "slider.horizontal.3")
-                        .font(.system(size: 11, weight: .bold))
-                        .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(.white.opacity(0.19), in: Capsule())
+                    SmallTag(title: "Wropych", color: .white)
+                    SmallTag(title: prefs.preset.rawValue, color: .white)
+                }
+                Text("Aujunpeak Wropych VN")
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                HStack(spacing: 10) {
+                    tinyHeroButton("Function", icon: "switch.2") { tab = 2 }
+                    tinyHeroButton("Game", icon: "gamecontroller.fill") { tab = 1 }
                     Spacer()
-                    Button { tab = 2 } label: {
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 14, weight: .bold))
-                            .frame(width: 37, height: 37)
-                            .background(.white.opacity(0.23), in: Circle())
-                    }
-                }.foregroundStyle(.white)
-            }.padding(21)
+                }
+            }
+            .padding(18)
         }
-        .frame(height: 210).clipped()
+        .frame(height: 218)
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Color.white.opacity(0.25)))
+        .shadow(color: Palette.text.opacity(0.12), radius: 16, y: 10)
     }
 
-    private func metric(_ label: String, value: String, detail: String, icon: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                IconTile(symbol: icon, color: tint, size: 39)
-                Spacer()
-                Circle().fill(Palette.green).frame(width: 6, height: 6)
-            }
-            Text(value).font(.system(size: 23, weight: .bold, design: .rounded))
-                .minimumScaleFactor(0.65).lineLimit(1).foregroundStyle(Palette.text)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(label).font(.system(size: 12, weight: .bold)).foregroundStyle(Palette.text)
-                Text(detail).font(.system(size: 10)).foregroundStyle(Palette.muted)
-                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
-            }
-        }.frame(maxWidth: .infinity, alignment: .leading)
-            .frame(minHeight: 130)
-            .luxeCard(padding: 15)
+    private var chartsRow: some View {
+        HStack(spacing: 12) {
+            UsageChartCard(title: "RAM", color: Palette.purple, valueText: DeviceSnapshot.readableBytes(monitor.snapshot.totalRAM), progress: min(0.92, Double(monitor.snapshot.totalRAM) / Double(max(monitor.snapshot.totalRAM + monitor.snapshot.storageTotal, 1))))
+            UsageChartCard(title: "CPU", color: Palette.blue, valueText: "\(monitor.snapshot.coreCount) lõi", progress: min(1, Double(monitor.snapshot.coreCount) / 8.0))
+        }
     }
 
-    private var deviceIDCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private var deviceCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
-                IconTile(symbol: "iphone.gen3.radiowaves.left.and.right", color: Palette.purple, size: 40)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Device ID · IDFV")
-                        .font(.system(size: 13, weight: .bold)).foregroundStyle(Palette.text)
-                    Text("Định danh ứng dụng do iOS cung cấp")
-                        .font(.system(size: 10)).foregroundStyle(Palette.muted)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Device")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(Palette.text)
+                    Text("thông tin thiết bị hiển thị gọn gàng")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Palette.muted)
                 }
                 Spacer()
                 Button {
                     UIPasteboard.general.string = monitor.snapshot.vendorID
-                    toast.show("Đã sao chép IDFV của thiết bị.")
+                    toast.show("Đã sao chép IDFV thiết bị.", type: .success)
                 } label: {
-                    Image(systemName: "doc.on.doc").foregroundStyle(Palette.purple)
-                        .frame(width: 36, height: 36).background(Palette.lilac, in: RoundedRectangle(cornerRadius: 12))
-                }.accessibilityLabel("Sao chép IDFV")
+                    IconTile(symbol: "doc.on.doc", color: Palette.purple, size: 40)
+                }
+                .buttonStyle(.plain)
             }
-            Text(monitor.snapshot.vendorID)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(Palette.text)
-                .textSelection(.enabled)
-                .lineLimit(2)
-            Text("IDFV không phải UDID/IMEI và có thể thay đổi khi gỡ hết ứng dụng cùng nhà phát triển.")
-                .font(.system(size: 10)).foregroundStyle(Palette.muted)
-                .fixedSize(horizontal: false, vertical: true)
-        }.luxeCard()
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                StatBadge(title: "Tên máy", value: monitor.snapshot.deviceName)
+                StatBadge(title: "Model", value: monitor.snapshot.hardwareModel)
+                StatBadge(title: "iOS", value: monitor.snapshot.systemVersion)
+                StatBadge(title: "Pin", value: monitor.snapshot.battery.map { "\($0)%" } ?? "—")
+                StatBadge(title: "Bộ nhớ trống", value: DeviceSnapshot.readableBytes(monitor.snapshot.storageFree))
+                StatBadge(title: "IDFV", value: shortID(monitor.snapshot.vendorID))
+            }
+        }
+        .luxeCard()
     }
 
-    private func actionTile(_ title: String, caption: String, icon: String, tint: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 15) {
-                IconTile(symbol: icon, color: tint, size: 44)
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(title).font(.system(size: 13, weight: .bold)).foregroundStyle(Palette.text)
-                    Text(caption).font(.system(size: 10)).foregroundStyle(Palette.muted)
-                        .lineLimit(2)
-                }
-                HStack {
-                    Spacer()
-                    Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(tint)
-                }
-            }
-            .frame(maxWidth: .infinity, minHeight: 108, alignment: .leading)
-            .luxeCard(padding: 15)
-        }.buttonStyle(.plain)
-    }
-
-    private var healthCard: some View {
+    private var actionPanel: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionHeading(title: "Tình trạng hệ thống")
             HStack {
-                Label("Nhiệt: \(monitor.snapshot.thermal)", systemImage: "thermometer.medium")
+                Text("Control Center")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Palette.text)
                 Spacer()
-                SmallTag(title: "THEO DÕI", color: Palette.green)
+                SmallTag(title: "Preview", color: Palette.orange)
             }
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(Palette.text)
-            Divider().overlay(Palette.line)
+            VStack(spacing: 6) {
+                SwitchRow(title: "Aimlock Preview", subtitle: "giao diện công tắc trong app", icon: "scope", isOn: $prefs.aimAssist)
+                    .onChange(of: prefs.aimAssist) { _, value in toast.show(value ? "Aimlock Preview đã bật." : "Aimlock Preview đã tắt.", type: .info) }
+                Divider().overlay(Palette.line)
+                SwitchRow(title: "Touch Sync", subtitle: "tối ưu cảm giác thao tác", icon: "hand.tap.fill", isOn: $prefs.touchSync)
+                Divider().overlay(Palette.line)
+                SwitchRow(title: "Head Trace", subtitle: "giao diện mô phỏng theo dõi mục tiêu", icon: "location.north.line.fill", isOn: $prefs.headTrace)
+                Divider().overlay(Palette.line)
+                SwitchRow(title: "Optimizer", subtitle: "tăng trải nghiệm trong chính app", icon: "bolt.fill", isOn: $prefs.optimizer)
+            }
+            HStack(spacing: 10) {
+                actionButton(title: "Refresh", icon: "arrow.clockwise", tint: Palette.blue) {
+                    monitor.refresh()
+                    toast.show("Đã làm mới thông số thiết bị.")
+                }
+                actionButton(title: "Cache", icon: "trash.fill", tint: Palette.green) {
+                    prefs.clearOwnCache()
+                    toast.show("Đã xóa bộ đệm của Aujunpeak.")
+                }
+                actionButton(title: "Function", icon: "switch.2", tint: Palette.purple) {
+                    tab = 2
+                }
+            }
+        }
+        .luxeCard()
+    }
+
+    private func tinyHeroButton(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                Text(title)
+            }
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(.white.opacity(0.16), in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func actionButton(title: String, icon: String, tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 10) {
+                IconTile(symbol: icon, color: tint, size: 42)
+                Text(title)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Palette.text)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(Palette.canvas, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func shortID(_ source: String) -> String {
+        if source.count <= 14 { return source }
+        let prefix = source.prefix(6)
+        let suffix = source.suffix(4)
+        return "\(prefix)…\(suffix)"
+    }
+}
+
+struct UsageChartCard: View {
+    let title: String
+    let color: Color
+    let valueText: String
+    let progress: Double
+    @State private var animated = 0.08
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Label("Bộ nhớ trống", systemImage: "internaldrive")
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Palette.text)
                 Spacer()
-                Text(DeviceSnapshot.readableBytes(monitor.snapshot.storageFree))
+                Circle().fill(color).frame(width: 8, height: 8)
             }
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(Palette.text)
-            Text("Các thống kê thể hiện giá trị iOS cung cấp; Aujunpeak không can thiệp hiệu năng của ứng dụng khác.")
-                .font(.system(size: 10)).foregroundStyle(Palette.muted)
-        }.luxeCard()
+            ZStack {
+                Circle().stroke(color.opacity(0.12), lineWidth: 11)
+                Circle()
+                    .trim(from: 0, to: animated)
+                    .stroke(LinearGradient(colors: [color, Palette.cyan], startPoint: .topLeading, endPoint: .bottomTrailing), style: StrokeStyle(lineWidth: 11, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                VStack(spacing: 4) {
+                    Text(valueText)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(Palette.text)
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                    Text("running")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Palette.muted)
+                }
+            }
+            .frame(height: 108)
+            miniBars
+        }
+        .frame(maxWidth: .infinity)
+        .luxeCard()
+        .onAppear {
+            withAnimation(.easeOut(duration: 1.0)) {
+                animated = max(0.12, min(progress, 0.96))
+            }
+        }
+    }
+
+    private var miniBars: some View {
+        HStack(alignment: .bottom, spacing: 6) {
+            ForEach(0..<7, id: \.self) { index in
+                Capsule()
+                    .fill(index < Int((animated * 10).rounded()) ? color : color.opacity(0.16))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 16 + CGFloat((index * 9) % 38))
+            }
+        }
+        .frame(height: 46)
     }
 }

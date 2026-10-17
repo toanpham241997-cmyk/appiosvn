@@ -6,6 +6,7 @@ struct AujunpeakApp: App {
     @StateObject private var monitor = DeviceMonitor()
     @StateObject private var preferences = BoostPreferences()
     @StateObject private var toast = ToastCenter()
+    @StateObject private var messages = MessageStore()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -21,6 +22,7 @@ struct AujunpeakApp: App {
             .environmentObject(monitor)
             .environmentObject(preferences)
             .environmentObject(toast)
+            .environmentObject(messages)
             .tint(Palette.purple)
             .preferredColorScheme(.light)
             .transaction { if preferences.reduceEffects { $0.disablesAnimations = true } }
@@ -42,15 +44,20 @@ struct AppShell: View {
     var body: some View {
         TabView(selection: $tab) {
             OverviewView(tab: $tab)
-                .tabItem { Label("Tổng quan", systemImage: "square.grid.2x2.fill") }.tag(0)
+                .tabItem { Label("Tổng quan", systemImage: "square.grid.2x2.fill") }
+                .tag(0)
             GamesView()
-                .tabItem { Label("Game", systemImage: "gamecontroller.fill") }.tag(1)
+                .tabItem { Label("Game", systemImage: "gamecontroller.fill") }
+                .tag(1)
             BoostView()
-                .tabItem { Label("Tăng tốc", systemImage: "bolt.fill") }.tag(2)
+                .tabItem { Label("Function", systemImage: "switch.2") }
+                .tag(2)
             MessagesView()
-                .tabItem { Label("Tin nhắn", systemImage: "bubble.left.and.bubble.right.fill") }.tag(3)
+                .tabItem { Label("Tin nhắn", systemImage: "bubble.left.and.bubble.right.fill") }
+                .tag(3)
             AccountView()
-                .tabItem { Label("Tài khoản", systemImage: "person.crop.circle.fill") }.tag(4)
+                .tabItem { Label("Tài khoản", systemImage: "person.crop.circle.fill") }
+                .tag(4)
         }
         .tint(Palette.purple)
     }

@@ -3,90 +3,41 @@ import SwiftUI
 struct GamesView: View {
     @StateObject private var catalog = GameCatalog()
     @State private var searchText = ""
-    @State private var selection = "Đề xuất"
+    @State private var selectedGame: StoreGame?
+    @State private var showBoostOverlay = false
+    @State private var boostingGameName = ""
     @Environment(\.openURL) private var openURL
     @EnvironmentObject private var toast: ToastCenter
-    @EnvironmentObject private var prefs: BoostPreferences
-
-    private let tags = ["Đề xuất", "Bắn súng", "MOBA", "Sinh tồn", "Phiêu lưu", "Sandbox"]
-    private let queries = ["Bắn súng": "shooting games", "MOBA": "moba",
-                           "Sinh tồn": "survival", "Phiêu lưu": "adventure game", "Sandbox": "sandbox game"]
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 21) {
-                BrandHeader(eyebrow: "APP STORE GAMES")
-                PageTitle(title: "Game Hub", subtitle: "Khám phá game thật từ App Store Việt Nam")
-                HStack(spacing: 9) {
-                    Image(systemName: "magnifyingglass").foregroundStyle(Palette.muted)
-                    TextField("Tìm Free Fire, PUBG, Roblox...", text: $searchText)
-                        .font(.system(size: 13))
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .submitLabel(.search)
-                        .onSubmit { Task { await catalog.search(searchText) } }
-                    if !searchText.isEmpty {
-                        Button { searchText = ""; Task { await catalog.loadFeatured() } } label: {
-                            Image(systemName: "xmark.circle.fill").foregroundStyle(Palette.muted)
-                        }
-                    }
-                    Button {
-                        Task { await catalog.search(searchText) }
-                    } label: {
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 34, height: 34)
-                            .background(Palette.gradient, in: RoundedRectangle(cornerRadius: 11))
-                    }.accessibilityLabel("Tìm game")
-                }
-                .padding(12).background(.white, in: RoundedRectangle(cornerRadius: 18))
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Palette.line))
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(tags, id: \.self) { tag in
-                            Button {
-                                selection = tag
-                                searchText = ""
-                                Task {
-                                    if tag == "Đề xuất" { await catalog.loadFeatured() }
-                                    else { await catalog.search(queries[tag] ?? tag) }
-                                }
-                            } label: {
-                                Text(tag).font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(selection == tag ? Color.white : Palette.muted)
-                                    .padding(.horizontal, 15).padding(.vertical, 11)
-                                    .background(selection == tag ? Palette.purple : Color.white, in: Capsule())
-                            }.buttonStyle(.plain)
-                        }
-                    }
-                }
-                if prefs.preset != .focus { featuredBanner }
-                HStack {
-                    SectionHeading(title: selection == "Đề xuất" ? "Game nổi bật" : "Danh mục \(selection)", trailing: "Nguồn: App Store")
-                    if catalog.loading { ProgressView().scaleEffect(0.75) }
-                }
-                VStack(spacing: 10) {
-                    ForEach(catalog.games) { game in
-                        gameRow(game)
-                    }
-                    if catalog.games.isEmpty && !catalog.loading {
-                        VStack(spacing: 10) {
-                            Image(systemName: "wifi.exclamationmark")
-                                .font(.system(size: 28)).foregroundStyle(Palette.purple)
-                            Text(catalog.message ?? "Chưa có kết quả")
-                                .font(.system(size: 12)).foregroundStyle(Palette.muted)
-                                .multilineTextAlignment(.center)
-                            Button("Thử lại") { Task { await catalog.loadFeatured() } }
-                                .font(.system(size: 12, weight: .bold))
-                        }
+            VStack(alignment: .leading, spacing: 18) {
+                BrandHeader()
+                searchBar
+                if catalog.loading {
+                    ProgressView()
                         .frame(maxWidth: .infinity)
-                        .padding(24).luxeCard()
+                        .padding(.vertical, 6)
+                }
+                LazyVStack(spacing: 12) {
+                    ForEach(catalog.games) { game in
+                        GameWingCard(game: game) {
+                            startBoost(for: game)
+                        }
                     }
                 }
-                systemHub
-                Spacer(minLength: 12)
-            }.padding(.horizontal, 18).padding(.top, 15)
+                if catalog.games.isEmpty && !catalog.loading {
+                    Text(catalog.message ?? "Không có dữ liệu game")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.muted)
+                        .frame(maxWidth: .infinity)
+                        .padding(20)
+                        .luxeCard()
+                }
+                databaseStrip
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 15)
         }
         .appPage()
         .task { await catalog.loadFeatured() }
@@ -94,90 +45,203 @@ struct GamesView: View {
             if searchText.isEmpty { await catalog.loadFeatured() }
             else { await catalog.search(searchText) }
         }
-    }
-
-    private var featuredBanner: some View {
-        ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 25)
-                .fill(LinearGradient(colors: [Color(hex: 0x151F49), Color(hex: 0x46408C)], startPoint: .topLeading, endPoint: .bottomTrailing))
-            Image(systemName: "gamecontroller.fill")
-                .font(.system(size: 112, weight: .ultraLight))
-                .foregroundStyle(.white.opacity(0.09))
-                .rotationEffect(.degrees(-18)).offset(x: 210, y: 8)
-            VStack(alignment: .leading, spacing: 10) {
-                SmallTag(title: "DISCOVER · PLAY", color: Palette.cyan)
-                Text("Your next favorite game")
-                    .font(.system(size: 21, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                Text("Danh sách được truy xuất trực tiếp từ danh mục Apple.")
-                    .font(.system(size: 11)).foregroundStyle(.white.opacity(0.75))
-            }.padding(20)
-        }.frame(height: 150).clipped()
-    }
-
-    private func gameRow(_ game: StoreGame) -> some View {
-        HStack(spacing: 12) {
-            AsyncImage(url: game.iconURL) { phase in
-                switch phase {
-                case .success(let image): image.resizable().scaledToFill()
-                case .failure: Image(systemName: "gamecontroller.fill").resizable().scaledToFit()
-                    .padding(16).foregroundStyle(Palette.purple)
-                case .empty: ProgressView()
-                @unknown default: Color.clear
-                }
+        .overlay {
+            if showBoostOverlay {
+                BoostLaunchOverlay(gameName: boostingGameName)
+                    .transition(.opacity)
             }
-            .frame(width: prefs.compactCards ? 51 : 63, height: prefs.compactCards ? 51 : 63)
-            .background(Palette.canvas)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            VStack(alignment: .leading, spacing: 5) {
-                Text(game.trackName).font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Palette.text).lineLimit(2)
-                Text(game.artistName).font(.system(size: 10)).foregroundStyle(Palette.muted).lineLimit(1)
-                HStack(spacing: 5) {
-                    Image(systemName: "star.fill").foregroundStyle(Palette.orange)
-                    Text(game.averageUserRating.map { String(format: "%.1f", $0) } ?? "App Store")
-                    if let genre = game.primaryGenreName {
-                        Text("· \(genre)").lineLimit(1)
+        }
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass").foregroundStyle(Palette.muted)
+            TextField("Tìm Free Fire, PUBG, Roblox...", text: $searchText)
+                .font(.system(size: 13))
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+                .onSubmit { Task { await catalog.search(searchText) } }
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                    Task { await catalog.loadFeatured() }
+                } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(Palette.muted)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(14)
+        .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Palette.line))
+    }
+
+    private var databaseStrip: some View {
+        HStack(spacing: 10) {
+            databaseChip("Game DB", "Live")
+            databaseChip("Route", "VN")
+            databaseChip("Boost", "Ready")
+        }
+    }
+
+    private func databaseChip(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).font(.system(size: 10)).foregroundStyle(Palette.muted)
+            Text(value).font(.system(size: 12, weight: .bold)).foregroundStyle(Palette.text)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Palette.line))
+    }
+
+    private func startBoost(for game: StoreGame) {
+        selectedGame = game
+        boostingGameName = game.trackName
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showBoostOverlay = true
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    showBoostOverlay = false
+                }
+                launchGame(game)
+            }
+        }
+    }
+
+    private func launchGame(_ game: StoreGame) {
+        let lower = game.trackName.lowercased()
+        let preferredScheme: String?
+        if lower.contains("roblox") { preferredScheme = "roblox://" }
+        else if lower.contains("genshin") { preferredScheme = "yuanshen://" }
+        else { preferredScheme = nil }
+
+        if let preferredScheme, let url = URL(string: preferredScheme) {
+            openURL(url)
+            toast.show("Đã gửi yêu cầu mở \(game.trackName).", type: .success)
+            return
+        }
+        if let url = game.storeURL {
+            openURL(url)
+            toast.show("Đã mở liên kết của \(game.trackName).", type: .success)
+        } else {
+            toast.show("Chưa có liên kết để mở game này.", type: .warning)
+        }
+    }
+}
+
+private struct GameWingCard: View {
+    let game: StoreGame
+    let boostAction: () -> Void
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(.white)
+            WingFlare()
+            HStack(spacing: 12) {
+                AsyncImage(url: game.iconURL) { phase in
+                    if let image = phase.image {
+                        image.resizable().scaledToFill()
+                    } else {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Palette.canvas)
+                            .overlay(Image(systemName: "gamecontroller.fill").foregroundStyle(Palette.purple))
                     }
-                }.font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.muted)
+                }
+                .frame(width: 72, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(game.trackName)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Palette.text)
+                        .lineLimit(2)
+                    Text(game.artistName)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Palette.muted)
+                        .lineLimit(1)
+                    HStack(spacing: 8) {
+                        SmallTag(title: game.primaryGenreName ?? "Game", color: Palette.blue)
+                        SmallTag(title: ratingText, color: Palette.orange)
+                    }
+                }
+                Spacer()
+                Button(action: boostAction) {
+                    VStack(spacing: 7) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 16, weight: .bold))
+                        Text("Boost")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(width: 70, height: 70)
+                    .background(Palette.gradient, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                }
+                .buttonStyle(.plain)
             }
-            Spacer(minLength: 0)
-            Button {
-                if let url = game.storeURL { openURL(url) }
-                else { toast.show("Không tìm thấy liên kết App Store.", type: .warning) }
-            } label: {
-                Text("App Store")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Palette.purple)
-                    .padding(.horizontal, 10).padding(.vertical, 9)
-                    .background(Palette.lilac, in: Capsule())
-            }
-        }.luxeCard(padding: 12)
+            .padding(14)
+        }
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Palette.line))
+        .shadow(color: Palette.text.opacity(0.04), radius: 14, y: 8)
     }
 
-    private var systemHub: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            SectionHeading(title: "Game system hub", trailing: "IOS STATUS")
-            HStack(spacing: 11) {
-                IconTile(symbol: "shield.lefthalf.filled", color: Palette.green)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Danh mục chính thức").font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.text)
-                    Text("Tên, icon và liên kết lấy từ API App Store")
-                        .font(.system(size: 11)).foregroundStyle(Palette.muted)
+    private var ratingText: String {
+        if let rating = game.averageUserRating {
+            return String(format: "%.1f ★", rating)
+        }
+        return "New"
+    }
+}
+
+private struct BoostLaunchOverlay: View {
+    let gameName: String
+    @State private var animate = false
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.35).ignoresSafeArea()
+            VStack(spacing: 16) {
+                ZStack {
+                    Circle().fill(Palette.lilac).frame(width: 98, height: 98)
+                    Circle().trim(from: 0, to: animate ? 0.92 : 0.1)
+                        .stroke(Palette.gradient, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .frame(width: 92, height: 92)
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(Palette.purple)
                 }
-                Spacer()
-                Image(systemName: "checkmark.seal.fill").foregroundStyle(Palette.green)
-            }
-            Divider().overlay(Palette.line)
-            HStack(spacing: 11) {
-                IconTile(symbol: "bolt.heart", color: Palette.blue)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Preset giao diện: \(prefs.preset.rawValue)")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.text)
-                    Text("Không sửa dữ liệu hoặc tốc độ game bên ngoài")
-                        .font(.system(size: 11)).foregroundStyle(Palette.muted)
+                Text("Boosting \(gameName)")
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundStyle(Palette.text)
+                VStack(alignment: .leading, spacing: 8) {
+                    boostLine("memory remap")
+                    boostLine("touch sync")
+                    boostLine("route optimizer")
                 }
-                Spacer()
             }
-        }.luxeCard()
+            .padding(24)
+            .frame(maxWidth: 290)
+            .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Palette.line))
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 1.4)) { animate = true }
+        }
+    }
+
+    private func boostLine(_ title: String) -> some View {
+        HStack(spacing: 10) {
+            Circle().fill(Palette.green).frame(width: 8, height: 8)
+            Text(title)
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundStyle(Palette.text)
+            Spacer()
+        }
     }
 }
