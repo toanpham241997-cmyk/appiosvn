@@ -1,6 +1,21 @@
-# Aujunpeak VN — Game Space v2 (SwiftUI)
+# Aujunpeak VN — Game Space v2.1 (SwiftUI, GitHub CI FIX)
 
 Full source code for an iPhone app with white/purple premium UI, key-only login, a live device dashboard, App Store game discovery, in-app performance presets, local message UI and a detailed profile. **Contains source + GitHub Actions, not a precompiled IPA.**
+
+## GitHub Actions compilation fix (2026-10-17)
+
+If you previously uploaded Aujunpeak v1 to the **same repository**, using GitHub's Upload Files tool to add the v2 files does **not** delete the older files. The original XcodeGen configuration recursively compiled **every** `.swift` under `App/`, accidentally including `ExploreView`, `HomeView`, `InboxView`, `ProfileView`, `TasksView` and `DemoStore` from v1. This caused `cannot find UIStyle/RoundIcon/SectionTitle in scope` and duplicate `ChatDetailView`. A separate Xcode 16.4 error in `LoginView` was `background(_:ignoresSafeAreaEdges:) requires ... ShapeStyle`.
+
+**v2.1 fixes both:** `project.yml` now lists the exact source files the v2 app needs, so even if obsolete v1 files remain on GitHub they are excluded from the build. `LoginView.swift` now uses `Color.white.ignoresSafeArea()`. `MessagesView.swift` uses a distinct detail-view name.
+
+**Important upload steps for existing GitHub repositories:**
+
+1. Unzip the new v2.1 archive. Upload its **contents** at the **root** of the same repo, not a nested `Aujunpeak-VN-v2.1-FIXED-source/` directory. Select **replace/overwrite** when GitHub asks about duplicate files. If your GitHub interface doesn't offer replacement, edit the three files `project.yml`, `App/Screens/LoginView.swift`, and `App/Screens/MessagesView.swift` directly using the fixed files.
+2. Verify that GitHub's **root** `project.yml` contains `- path: App/Screens/OverviewView.swift` and **does not** contain `- path: App` by itself. This is the essential fix.
+3. Optionally remove leftover files `App/DemoStore.swift`, `App/Screens/ExploreView.swift`, `HomeView.swift`, `InboxView.swift`, `ProfileView.swift`, and `TasksView.swift` from GitHub (these are no longer used). If you remove them, do so in a separate commit.
+4. Open GitHub Actions and rerun **Build iOS IPA (unsigned)** on the newest commit. Check that the compiler list no longer contains old screens.
+
+There is **no claim of a successful end-to-end iOS build** until GitHub Actions/Xcode actually runs on your repository. In this environment, Swift source syntax, project manifest and backend tests were checked.
 
 ## What is implemented
 

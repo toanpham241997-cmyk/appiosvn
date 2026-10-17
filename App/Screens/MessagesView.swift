@@ -64,7 +64,7 @@ struct MessagesView: View {
             }
             .appPage()
             .navigationDestination(for: String.self) { id in
-                ChatDetailView(store: store, conversationID: id)
+                GameSpaceChatDetailView(store: store, conversationID: id)
             }
         }
     }
@@ -88,7 +88,7 @@ struct MessagesView: View {
     }
 }
 
-private struct ChatDetailView: View {
+private struct GameSpaceChatDetailView: View {
     @ObservedObject var store: MessageStore
     let conversationID: String
     @State private var draft = ""

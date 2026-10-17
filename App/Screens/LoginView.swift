@@ -121,7 +121,7 @@ struct LoginView: View {
                 .frame(minHeight: geo.size.height, alignment: .top)
             }
             .scrollDismissesKeyboard(.interactively)
-            .background(.white.ignoresSafeArea())
+            .background(Color.white.ignoresSafeArea())
         }
     }
     private func signIn() async {

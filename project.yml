@@ -18,7 +18,23 @@ targets:
     type: application
     platform: iOS
     sources:
-      - path: App
+      # EXPLICIT V2 FILE ALLOWLIST: do not compile stale v1 screens accidentally kept in GitHub.
+      - path: App/AujunpeakApp.swift
+      - path: App/Theme.swift
+      - path: App/Components/ToastCenter.swift
+      - path: App/Services/BoostPreferences.swift
+      - path: App/Services/DeviceInfo.swift
+      - path: App/Services/GameCatalog.swift
+      - path: App/Services/KeyAuthentication.swift
+      - path: App/Services/MessageStore.swift
+      - path: App/Screens/AccountView.swift
+      - path: App/Screens/BoostView.swift
+      - path: App/Screens/GamesView.swift
+      - path: App/Screens/LoginView.swift
+      - path: App/Screens/MessagesView.swift
+      - path: App/Screens/OverviewView.swift
+      - path: App/Assets.xcassets
+      - path: App/PrivacyInfo.xcprivacy
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: vn.aujunpeak.studio
