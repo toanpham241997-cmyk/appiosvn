@@ -1,0 +1,7 @@
+name = "aujunpeak-key-auth"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[[kv_namespaces]]
+binding = "KEYS"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"

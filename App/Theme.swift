@@ -1,134 +1,157 @@
 import SwiftUI
 
-// MARK: - Design tokens
 extension Color {
     init(hex: UInt32) {
-        self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xff) / 255,
-            green: Double((hex >> 8) & 0xff) / 255,
-            blue: Double(hex & 0xff) / 255,
-            opacity: 1
-        )
+        self.init(.sRGB, red: Double((hex >> 16) & 0xff) / 255,
+                  green: Double((hex >> 8) & 0xff) / 255,
+                  blue: Double(hex & 0xff) / 255, opacity: 1)
     }
 }
 
-enum UIStyle {
-    static let ink = Color(hex: 0x161C32)
-    static let muted = Color(hex: 0x8490A9)
-    static let blue = Color(hex: 0x5B5CFA)
-    static let violet = Color(hex: 0x9466F8)
-    static let ice = Color(hex: 0xF6F8FD)
-    static let line = Color(hex: 0xEAEFFA)
-    static let green = Color(hex: 0x22BE9D)
-    static let orange = Color(hex: 0xFBAD5B)
-    static let pink = Color(hex: 0xF174A7)
-    static let gradient = LinearGradient(
-        colors: [blue, violet], startPoint: .topLeading, endPoint: .bottomTrailing
-    )
-}
-
-struct SoftCard: ViewModifier {
-    var padding: CGFloat = 17
-    func body(content: Content) -> some View {
-        content
-            .padding(padding)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(UIStyle.line, lineWidth: 1))
-            .shadow(color: UIStyle.ink.opacity(0.035), radius: 18, y: 7)
-    }
+enum Palette {
+    static let text = Color(hex: 0x151C31)
+    static let muted = Color(hex: 0x8B96AD)
+    static let purple = Color(hex: 0x6555F5)
+    static let blue = Color(hex: 0x457DFF)
+    static let cyan = Color(hex: 0x28C5DC)
+    static let green = Color(hex: 0x14B995)
+    static let orange = Color(hex: 0xF39C57)
+    static let red = Color(hex: 0xEA5F76)
+    static let line = Color(hex: 0xE9EDFA)
+    static let canvas = Color(hex: 0xF6F8FD)
+    static let lilac = Color(hex: 0xF0EFFF)
+    static let gradient = LinearGradient(colors: [purple, blue], startPoint: .topLeading, endPoint: .bottomTrailing)
 }
 
 extension View {
-    func softCard(padding: CGFloat = 17) -> some View { modifier(SoftCard(padding: padding)) }
-}
-
-struct RoundIcon: View {
-    let icon: String
-    var tint: Color = UIStyle.blue
-    var background: Color = Color(hex: 0xF0F0FF)
-    var size: CGFloat = 48
-    var body: some View {
-        Image(systemName: icon)
-            .font(.system(size: size * 0.38, weight: .semibold))
-            .foregroundStyle(tint)
-            .frame(width: size, height: size)
-            .background(background, in: RoundedRectangle(cornerRadius: size * 0.32, style: .continuous))
+    func luxeCard(padding: CGFloat = 17) -> some View {
+        self.padding(padding)
+            .background(.white, in: RoundedRectangle(cornerRadius: 23, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 23, style: .continuous).stroke(Palette.line, lineWidth: 1))
+            .shadow(color: Palette.text.opacity(0.035), radius: 15, y: 6)
+    }
+    func appPage() -> some View {
+        self.frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Palette.canvas.ignoresSafeArea())
     }
 }
 
-struct SectionTitle: View {
-    let title: String
-    var subtitle: String? = nil
-    var action: String? = nil
-    var onAction: (() -> Void)? = nil
+struct BrandMark: View {
+    var size: CGFloat = 44
     var body: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.system(size: 20, weight: .bold)).foregroundStyle(UIStyle.ink)
-                if let subtitle { Text(subtitle).font(.system(size: 12)).foregroundStyle(UIStyle.muted) }
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.32, style: .continuous)
+                .fill(Palette.gradient)
+            Image(systemName: "bolt.shield.fill")
+                .font(.system(size: size * 0.43, weight: .bold))
+                .foregroundStyle(.white)
+        }
+        .frame(width: size, height: size)
+        .shadow(color: Palette.purple.opacity(0.25), radius: 12, y: 5)
+    }
+}
+
+struct BrandHeader: View {
+    var eyebrow = "GAME CONTROL CENTER"
+    var showBell = true
+    @EnvironmentObject private var toast: ToastCenter
+    var body: some View {
+        HStack(spacing: 12) {
+            BrandMark(size: 42)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("AUJUNPEAK").font(.system(size: 17, weight: .black, design: .rounded))
+                    .tracking(1.5).foregroundStyle(Palette.text)
+                Text(eyebrow).font(.system(size: 9, weight: .bold))
+                    .tracking(2).foregroundStyle(Palette.muted)
             }
             Spacer()
-            if let action, let onAction {
-                Button(action, action: onAction)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(UIStyle.blue)
+            if showBell {
+                Button {
+                    toast.show("Các thông báo hệ thống đang hoạt động", type: .info)
+                } label: {
+                    Image(systemName: "bell.badge")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Palette.text)
+                        .frame(width: 42, height: 42)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Palette.line))
+                }
+                .accessibilityLabel("Thông báo")
             }
         }
     }
 }
 
-struct FilledAction: View {
+struct PageTitle: View {
     let title: String
-    var icon: String = "arrow.right"
+    let subtitle: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title).font(.system(size: 29, weight: .bold, design: .rounded))
+                .tracking(-0.8).foregroundStyle(Palette.text)
+            Text(subtitle).font(.system(size: 13)).foregroundStyle(Palette.muted)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct SectionHeading: View {
+    let title: String
+    var trailing: String? = nil
+    var body: some View {
+        HStack {
+            Text(title).font(.system(size: 17, weight: .bold)).foregroundStyle(Palette.text)
+            Spacer()
+            if let trailing {
+                Text(trailing).font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.muted)
+            }
+        }
+    }
+}
+
+struct IconTile: View {
+    let symbol: String
+    var color: Color = Palette.purple
+    var size: CGFloat = 44
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: size * 0.40, weight: .semibold))
+            .foregroundStyle(color)
+            .frame(width: size, height: size)
+            .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: size * 0.3))
+    }
+}
+
+struct PrimaryButton: View {
+    let title: String
+    var symbol = "arrow.right"
+    var busy = false
     let action: () -> Void
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Spacer()
-                Text(title).font(.system(size: 15, weight: .bold))
-                Image(systemName: icon).font(.system(size: 13, weight: .bold))
+                if busy { ProgressView().tint(.white) }
+                else { Text(title); Image(systemName: symbol) }
                 Spacer()
             }
+            .font(.system(size: 15, weight: .bold))
             .foregroundStyle(.white)
-            .frame(height: 54)
-            .background(UIStyle.gradient, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+            .frame(height: 53)
+            .background(Palette.gradient, in: RoundedRectangle(cornerRadius: 17))
         }
+        .disabled(busy)
         .buttonStyle(.plain)
     }
 }
 
-struct AccentPill: View {
-    let text: String
-    let icon: String
-    var color: Color = UIStyle.blue
+struct SmallTag: View {
+    let title: String
+    var color: Color = Palette.purple
     var body: some View {
-        Label(text, systemImage: icon)
-            .font(.system(size: 11, weight: .semibold))
+        Text(title).font(.system(size: 10, weight: .bold))
             .foregroundStyle(color)
-            .padding(.horizontal, 11)
-            .padding(.vertical, 7)
+            .padding(.horizontal, 11).padding(.vertical, 6)
             .background(color.opacity(0.10), in: Capsule())
-    }
-}
-
-struct BackgroundCanvas: View {
-    var body: some View {
-        UIStyle.ice.ignoresSafeArea()
-    }
-}
-
-struct BrandMark: View {
-    var size: CGFloat = 54
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.30, style: .continuous)
-                .fill(UIStyle.gradient)
-            Image(systemName: "sparkles.rectangle.stack.fill")
-                .font(.system(size: size * 0.43, weight: .medium))
-                .foregroundStyle(.white)
-        }
-        .frame(width: size, height: size)
-        .shadow(color: UIStyle.blue.opacity(0.25), radius: 13, y: 7)
     }
 }

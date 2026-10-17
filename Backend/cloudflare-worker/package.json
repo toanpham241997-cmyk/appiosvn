@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "name": "aujunpeak-auth",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "generate-key": "node create-key.mjs",
+    "test": "node test/worker.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

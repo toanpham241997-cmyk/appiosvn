@@ -2,53 +2,56 @@ import SwiftUI
 
 @main
 struct AujunpeakApp: App {
-    @AppStorage("demoSignedIn") private var demoSignedIn = false
-    @State private var sessionSignedIn = false
-    @StateObject private var store = DemoStore()
+    @StateObject private var session = SessionManager()
+    @StateObject private var monitor = DeviceMonitor()
+    @StateObject private var preferences = BoostPreferences()
+    @StateObject private var toast = ToastCenter()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             Group {
-                if demoSignedIn || sessionSignedIn {
-                    AppShell(onLogout: {
-                        demoSignedIn = false
-                        sessionSignedIn = false
-                    })
+                if session.isLoggedIn {
+                    AppShell()
                 } else {
-                    LoginView(onLogin: { remember in
-                        if remember { demoSignedIn = true }
-                        else { sessionSignedIn = true }
-                    })
+                    LoginView()
                 }
             }
-            .environmentObject(store)
-            .tint(UIStyle.blue)
+            .environmentObject(session)
+            .environmentObject(monitor)
+            .environmentObject(preferences)
+            .environmentObject(toast)
+            .tint(Palette.purple)
             .preferredColorScheme(.light)
+            .transaction { if preferences.reduceEffects { $0.disablesAnimations = true } }
+            .overlay(alignment: .top) { ToastBanner().environmentObject(toast) }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    monitor.refresh()
+                    preferences.applyIdleTimer()
+                } else {
+                    preferences.pauseIdleTimer()
+                }
+            }
         }
     }
 }
 
 struct AppShell: View {
-    let onLogout: () -> Void
-    @State private var selectedTab = 0
+    @State private var tab = 0
     var body: some View {
-        TabView(selection: $selectedTab) {
-            HomeView(selectedTab: $selectedTab)
-                .tabItem { Label("Tổng quan", systemImage: "square.grid.2x2.fill") }
-                .tag(0)
-            ExploreView()
-                .tabItem { Label("Khám phá", systemImage: "square.stack.3d.up.fill") }
-                .tag(1)
-            TasksView()
-                .tabItem { Label("Công việc", systemImage: "checkmark.circle.fill") }
-                .tag(2)
-            InboxView()
-                .tabItem { Label("Tin nhắn", systemImage: "bubble.left.and.bubble.right.fill") }
-                .tag(3)
-            ProfileView(onLogout: onLogout)
-                .tabItem { Label("Tài khoản", systemImage: "person.crop.circle.fill") }
-                .tag(4)
+        TabView(selection: $tab) {
+            OverviewView(tab: $tab)
+                .tabItem { Label("Tổng quan", systemImage: "square.grid.2x2.fill") }.tag(0)
+            GamesView()
+                .tabItem { Label("Game", systemImage: "gamecontroller.fill") }.tag(1)
+            BoostView()
+                .tabItem { Label("Tăng tốc", systemImage: "bolt.fill") }.tag(2)
+            MessagesView()
+                .tabItem { Label("Tin nhắn", systemImage: "bubble.left.and.bubble.right.fill") }.tag(3)
+            AccountView()
+                .tabItem { Label("Tài khoản", systemImage: "person.crop.circle.fill") }.tag(4)
         }
-        .tint(UIStyle.blue)
+        .tint(Palette.purple)
     }
 }
