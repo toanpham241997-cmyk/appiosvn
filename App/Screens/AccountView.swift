@@ -35,15 +35,15 @@ struct AccountView: View {
                         }.padding(.vertical, 10)
                     }.buttonStyle(.plain)
                 }.luxeCard(padding: 14)
-                SectionHeading(title: "Thông tin key", trailing: "XÁC THỰC SERVER")
+                SectionHeading(title: "Thông tin key", trailing: AppConfig.authenticationMode == .localPreview ? "KEY XEM TRƯỚC" : "XÁC THỰC SERVER")
                 VStack(spacing: 0) {
-                    propertyRow("Trạng thái", value: "Đã xác thực", icon: "checkmark.shield.fill")
+                    propertyRow("Trạng thái", value: AppConfig.authenticationMode == .localPreview ? "Đăng nhập cục bộ" : "Đã xác thực", icon: "checkmark.shield.fill")
                     Divider().padding(.leading, 50)
                     propertyRow("Loại tài khoản", value: profile?.tier ?? "—", icon: "crown")
                     Divider().padding(.leading, 50)
                     propertyRow("Mã key", value: "•••• •••• \(profile?.keySuffix ?? "")", icon: "key.fill")
                     Divider().padding(.leading, 50)
-                    propertyRow("Hết hạn", value: profile?.expiresAt?.formatted(date: .abbreviated, time: .omitted) ?? "Theo máy chủ", icon: "calendar")
+                    propertyRow("Hết hạn", value: profile?.expiresAt?.formatted(date: .abbreviated, time: .omitted) ?? (AppConfig.authenticationMode == .localPreview ? "Không giới hạn (xem trước)" : "Theo máy chủ"), icon: "calendar")
                 }.luxeCard(padding: 14)
                 Button { showLogout = true } label: {
                     HStack(spacing: 12) {
@@ -100,7 +100,7 @@ struct AccountView: View {
                         Text(profile?.displayName ?? "Member")
                             .font(.system(size: 19, weight: .bold, design: .rounded)).foregroundStyle(.white)
                             .lineLimit(1)
-                        Text("VERIFIED MEMBER")
+                        Text(AppConfig.authenticationMode == .localPreview ? "PREVIEW ACCESS" : "VERIFIED MEMBER")
                             .font(.system(size: 10, weight: .bold)).tracking(1.7)
                             .foregroundStyle(Palette.cyan)
                     }
@@ -109,7 +109,7 @@ struct AccountView: View {
                 HStack {
                     Label("\(profile?.tier ?? "Member") PLAN", systemImage: "crown.fill")
                     Spacer()
-                    Label("ACTIVE", systemImage: "checkmark.seal.fill")
+                    Label(AppConfig.authenticationMode == .localPreview ? "PREVIEW" : "ACTIVE", systemImage: "checkmark.seal.fill")
                 }
                 .font(.system(size: 10, weight: .bold))
                 .foregroundStyle(.white.opacity(0.87))

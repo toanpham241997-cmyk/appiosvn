@@ -1,3 +1,25 @@
+# Aujunpeak VN v2.2 — OFFLINE PREVIEW LOGIN
+
+**Bản này KHÔNG CẦN SERVER/API.** Key để vào app thử giao diện là:
+
+```text
+havanhuan
+```
+
+Đăng nhập: mở app → nhập `havanhuan` (đúng chữ thường, không khoảng trắng ở giữa) → **Đăng nhập**. Key sai sẽ báo lỗi; không có nút bỏ qua màn hình login. Không tạo tài khoản / KV / Cloudflare / npm cho bản này. Mỗi lần mở lại app có thể yêu cầu nhập lại key. Trang Tài khoản hiển thị rõ đây là **key xem trước**, không phải xác thực server. IDFV không được gửi đi khi đăng nhập bằng key offline.
+
+**Cập nhật trên GitHub:** Tải ZIP này, giải nén và chép **nội dung bên trong** lên thư mục gốc repository, ghi đè file trùng tên. Với repository đã có v2.1, chỉ cần cập nhật `App/Services/KeyAuthentication.swift`, `App/Screens/LoginView.swift`, `App/Screens/AccountView.swift`, `project.yml`. Sau đó Actions → `Build iOS IPA (unsigned)` → Run workflow. IPA unsigned là artifact để kiểm tra CI, muốn cài trên iPhone thông thường vẫn cần bản đã ký.
+
+**Sau này chuyển sang server:** Mở `App/Services/KeyAuthentication.swift`, đổi `authenticationMode = .localPreview` thành `.server`, điền `authBaseURL` là địa chỉ HTTPS API đã triển khai, build lại app. Backend mẫu vẫn nằm trong `Backend/cloudflare-worker`, nhưng *chưa được sử dụng* trong bản xem trước.
+
+**Cảnh báo:** `havanhuan` được đặt thẳng trong mã nguồn ứng dụng để phục vụ xem trước nên không thể xem là khóa bảo mật; đừng dùng để thu phí hoặc cấp phép thương mại.
+
+---
+
+## Tài liệu chi tiết của phiên bản dùng server (tham khảo cho tương lai)
+
+**Các chỉ dẫn bắt buộc cấu hình server bên dưới chỉ áp dụng sau khi chuyển sang `.server`, không áp dụng cho v2.2 preview.**
+
 # Aujunpeak VN — Game Space v2.1 (SwiftUI, GitHub CI FIX)
 
 Full source code for an iPhone app with white/purple premium UI, key-only login, a live device dashboard, App Store game discovery, in-app performance presets, local message UI and a detailed profile. **Contains source + GitHub Actions, not a precompiled IPA.**

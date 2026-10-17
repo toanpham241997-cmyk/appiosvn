@@ -1,11 +1,14 @@
 import Foundation
 import UIKit
 
-// Replace this with your deployed HTTPS Cloudflare Worker root URL.
-// Example: https://aujunpeak-auth.your-subdomain.workers.dev
-// Do not place secret keys or an allowlist in the iOS application.
+// Chế độ xem trước: chưa gọi server/API. Chỉ dùng để thử giao diện.
+// Khi triển khai key thật, đổi .localPreview thành .server và khai báo authBaseURL.
+// KHÔNG dùng key hardcode trong bản phân phối thương mại: ai cũng có thể đọc key này.
+enum AuthenticationMode { case localPreview, server }
 enum AppConfig {
-    static let authBaseURL = ""
+    static let authenticationMode: AuthenticationMode = .localPreview
+    static let previewKey = "havanhuan"
+    static let authBaseURL = "" // HTTPS Cloudflare Worker URL khi chuyển sang .server
 }
 
 struct AuthenticatedProfile {
@@ -25,6 +28,29 @@ struct AuthenticatedProfile {
     func login(key: String) async {
         let normalized = key.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalized.isEmpty else { loginError = "Vui lòng nhập key đăng nhập."; return }
+        guard !isChecking else { return }
+        loginError = nil
+
+        // Xem trước offline: không cần Cloudflare, không gọi mạng hay gửi ID thiết bị.
+        if AppConfig.authenticationMode == .localPreview {
+            guard normalized == AppConfig.previewKey else {
+                loginError = "Key không đúng. Vui lòng nhập chính xác key xem trước."
+                return
+            }
+            profile = AuthenticatedProfile(
+                displayName: "Aujunpeak Preview",
+                tier: "Preview",
+                keySuffix: String(normalized.suffix(4)),
+                expiresAt: nil
+            )
+            return
+        }
+
+        await loginWithServer(key: normalized)
+    }
+
+    // Chưa sử dụng trong bản preview. Giữ sẵn để bổ sung máy chủ xác thực sau này.
+    private func loginWithServer(key normalized: String) async {
         guard let root = URL(string: AppConfig.authBaseURL), root.scheme == "https", root.host != nil else {
             loginError = "Chưa cấu hình máy chủ xác thực. Xem README để kết nối key server."
             return

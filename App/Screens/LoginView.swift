@@ -52,7 +52,7 @@ struct LoginView: View {
                     VStack(alignment: .leading, spacing: 9) {
                         HStack(spacing: 8) {
                             Circle().fill(Palette.green).frame(width: 7, height: 7)
-                            Text("SECURE MEMBER AREA").font(.system(size: 10, weight: .bold))
+                            Text("PREVIEW MEMBER AREA").font(.system(size: 10, weight: .bold))
                                 .tracking(1.8).foregroundStyle(Palette.purple)
                         }
                         Text("Đăng nhập bằng key")
@@ -110,7 +110,7 @@ struct LoginView: View {
                     Spacer(minLength: 38)
                     HStack(spacing: 7) {
                         Image(systemName: "lock.shield")
-                        Text("Kết nối mã hóa HTTPS · Không có chế độ demo")
+                        Text("Xem trước offline · Không cần API hoặc máy chủ")
                     }
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Palette.muted)
@@ -128,7 +128,7 @@ struct LoginView: View {
         await session.login(key: key)
         if session.isLoggedIn {
             key = ""
-            toast.show("Xác thực key thành công. Chào mừng trở lại!")
+            toast.show("Đăng nhập xem trước thành công. Chào mừng bạn!")
         } else if let message = session.loginError {
             toast.show(message, type: .error)
         }
